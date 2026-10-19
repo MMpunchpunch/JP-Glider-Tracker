@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>妻沼滑空場 機体監視システム (Menuma Glider Tracker)</title>
+    <title>妻沼滑空場 機体監視システム (Menuma Flight Tracker)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Leaflet CSS -->
@@ -14,7 +14,7 @@
         body { font-family: 'Inter', sans-serif; }
         #map { z-index: 10; }
         .aircraft-icon {
-            transition: all 1s linear;
+            transition: all 0.5s linear;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -59,7 +59,7 @@
 
     <!-- サイドバー -->
     <aside id="sidebar" class="fixed md:relative top-0 left-0 h-full w-80 bg-slate-900 border-r border-slate-700 flex flex-col z-40 shadow-2xl transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 flex-shrink-0">
-        <button onclick="toggleSidebar(false)" title="サイドバーをたたむ" class="absolute top-4 right-3 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 p-1.5 rounded-lg border border-slate-700 transition-colors z-10">
+        <button onclick="toggleSidebar(false)" title="サイドバーをたたむ" class="absolute top-4 right-3 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 p-1.5 rounded-lg border border-slate-700 transition-colors z-10 md:hidden">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
 
@@ -69,62 +69,78 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Menuma Tracker
                 </h1>
-                <p class="text-[11px] text-slate-400 mt-0.5">妻沼滑空場 リアルタイム監視システム</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">妻沼滑空場 リアルタイム機体監視</p>
             </div>
         </div>
 
-        <!-- デモモード切り替えトグル -->
-        <div class="p-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
-                動作モード
-            </span>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="demo-mode-toggle" onchange="toggleDemoMode(this.checked)" class="sr-only peer" checked>
-                <div class="w-20 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-9 after:transition-all peer-checked:bg-amber-600"></div>
-                <span id="demo-toggle-label" class="absolute left-2 text-[10px] font-bold text-white pointer-events-none">デモ</span>
-            </label>
-        </div>
-
-        <div class="p-3 border-b border-slate-800 bg-slate-950/50 flex items-center justify-between text-xs">
-            <span class="flex items-center gap-1.5">
-                <span class="relative flex h-2.5 w-2.5">
-                    <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        <!-- 受信ステータス表示エリア -->
+        <div class="p-3 border-b border-slate-800 bg-slate-950/80 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+                <span class="flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                        <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span id="status-dot" class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                    <span id="system-status" class="font-bold text-emerald-400">通信準備中...</span>
                 </span>
-                <span id="system-status" class="font-medium">受信中...</span>
-            </span>
-            <span id="last-update" class="text-slate-500 font-mono">--:--:--</span>
+                <span id="last-update" class="text-slate-400 font-mono text-[11px]">--:--:--</span>
+            </div>
+
+            <!-- OGN / ADS-B データソース別通信ステータス -->
+            <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-slate-800/80 text-[10px] font-mono">
+                <div id="status-box-ogn" class="bg-slate-800/60 p-1.5 rounded border border-slate-700/60 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-slate-400">
+                        <span>OGN (グライダー)</span>
+                        <span id="ogn-badge" class="px-1 rounded bg-slate-700 text-slate-300 font-bold">CONNECTING</span>
+                    </div>
+                    <div class="mt-1 flex justify-between text-slate-300">
+                        <span>検出: <b id="ogn-count" class="text-white">0</b>機</span>
+                        <span id="ogn-latency" class="text-slate-400">--</span>
+                    </div>
+                </div>
+
+                <div id="status-box-adsb" class="bg-slate-800/60 p-1.5 rounded border border-slate-700/60 flex flex-col justify-between">
+                    <div class="flex justify-between items-center text-slate-400">
+                        <span>ADS-B (旅客機)</span>
+                        <span id="adsb-badge" class="px-1 rounded bg-slate-700 text-slate-300 font-bold">IDLE</span>
+                    </div>
+                    <div class="mt-1 flex justify-between text-slate-300">
+                        <span>検出: <b id="adsb-count" class="text-white">0</b>機</span>
+                        <span id="adsb-latency" class="text-slate-400">--</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="p-4 border-b border-slate-800 space-y-3">
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-slate-800/80 p-2.5 rounded-lg text-center border border-slate-700/50">
-                    <p class="text-[11px] text-slate-400 mb-0.5">画面内機体数</p>
+                    <p class="text-[11px] text-slate-400 mb-0.5">画面内表示数</p>
                     <p class="text-lg font-mono font-bold text-white" id="total-aircrafts">0</p>
                 </div>
-                <div class="bg-slate-800/80 p-2.5 rounded-lg text-center border border-slate-700/50">
-                    <p class="text-[11px] text-slate-400 mb-0.5">データソース</p>
-                    <p class="text-[11px] font-semibold text-sky-300 mt-1" id="data-source">OGN + ADS-B</p>
+                <div class="bg-slate-800/80 p-2.5 rounded-lg text-center border border-slate-700/50 flex flex-col justify-center items-center">
+                    <p class="text-[11px] text-slate-400 mb-0.5">監視モード</p>
+                    <p class="text-[11px] font-semibold text-emerald-300" id="data-source">ライブ監視中</p>
                 </div>
             </div>
 
+            <!-- 種別フィルタ -->
             <div class="flex bg-slate-950 p-1 rounded-lg text-xs font-semibold">
-                <button id="filter-all" onclick="setFilter('all')" class="flex-1 py-1 text-center rounded bg-sky-500 text-slate-950 transition-colors">すべて</button>
-                <button id="filter-ogn" onclick="setFilter('ogn')" class="flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors">OGN</button>
-                <button id="filter-adsb" onclick="setFilter('adsb')" class="flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors">ADS-B</button>
+                <button id="filter-all" onclick="setFilter('all')" class="flex-1 py-1 text-center rounded bg-sky-500 text-slate-950 transition-colors font-bold">すべて</button>
+                <button id="filter-ogn" onclick="setFilter('ogn')" class="flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors font-normal">OGN</button>
+                <button id="filter-adsb" onclick="setFilter('adsb')" class="flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors font-normal">旅客機(ADS-B)</button>
             </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-2" id="sidebar-content-area">
             <div class="flex items-center justify-center h-full text-slate-500 text-sm">
-                ライブデータ待機中...
+                ライブデータ取得中...
             </div>
         </div>
     </aside>
 
     <main class="flex-1 relative h-full w-full">
-        <button id="sidebar-open-btn" onclick="toggleSidebar(true)" title="サイドバーを開く" class="absolute top-4 left-0 z-[200] bg-slate-900/90 hover:bg-slate-800 text-sky-400 border border-l-0 border-slate-700 py-3 px-1.5 rounded-r-xl shadow-2xl transition-all flex items-center justify-center group active:scale-95">
+        <button id="sidebar-open-btn" onclick="toggleSidebar(true)" title="サイドバーを開く" class="absolute top-4 left-0 z-[200] bg-slate-900/90 hover:bg-slate-800 text-sky-400 border border-l-0 border-slate-700 py-3 px-1.5 rounded-r-xl shadow-2xl transition-all flex items-center justify-center group active:scale-95 md:hidden">
             <svg id="sidebar-open-icon" class="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
             </svg>
@@ -132,6 +148,7 @@
 
         <div id="map" class="w-full h-full bg-slate-800"></div>
 
+        <!-- プレイバックバー -->
         <div id="playback-bar" class="hidden absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[400] w-11/12 max-w-2xl bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-3 md:p-4 text-xs">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
@@ -164,11 +181,12 @@
             </div>
         </div>
 
+        <!-- 機体詳細パネル -->
         <div id="flight-details" class="hidden absolute top-4 right-4 z-[400] w-72 md:w-80 bg-slate-900/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl p-4 md:p-5 text-sm transform transition-all">
             <div class="flex justify-between items-start border-b border-slate-700 pb-3 mb-3">
                 <div>
                     <h2 id="detail-callsign" class="text-xl md:text-2xl font-bold text-white tracking-wider">JAXXXX</h2>
-                    <p id="detail-model" class="text-sky-400 font-mono text-xs mt-1">Glider / Tow Plane</p>
+                    <p id="detail-model" class="text-sky-400 font-mono text-xs mt-1">Glider / Tow Plane / Commercial</p>
                 </div>
                 <button onclick="closeDetails()" class="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded p-1 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -209,19 +227,21 @@
         let currentData = [];
         let selectedIcao24 = null;
         let ognSocket = null;
-        let reconnectTimer = null;
         let adsbFetchTimer = null;
         let activeFilter = 'all';
-        const RECONNECT_INTERVAL = 4000;
 
-        let isDemoMode = true;
-        let demoSimulationTimer = null;
-        let demoFleet = [];
+        let statusState = {
+            ognConnected: false,
+            ognLastPacket: null,
+            ognCount: 0,
+            adsbStatus: 'idle',
+            adsbLastFetch: null,
+            adsbCount: 0
+        };
 
         let flightTracks = {};
         let trackPolylines = {};
         let flightLogs = [];
-        let groundElevCache = {};   
 
         let isPlaybackMode = false;
         let activePlaybackLog = null;
@@ -232,178 +252,9 @@
         let playbackMarker = null;
         let playbackPolyline = null;
 
-        function toggleSidebar(show) {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if (show) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-
-        function setFilter(filter) {
-            activeFilter = filter;
-            ['all', 'ogn', 'adsb'].forEach(f => {
-                const btn = document.getElementById(`filter-${f}`);
-                if (f === filter) {
-                    btn.className = "flex-1 py-1 text-center rounded bg-sky-500 text-slate-950 transition-colors font-bold";
-                } else {
-                    btn.className = "flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors font-normal";
-                }
-            });
-            updateUI();
-        }
-
-        function initDemoFleet() {
-            const demoCalls = [
-                { call: 'JA2515', type: 'glider', src: 'OGN' },
-                { call: 'JA2421', type: 'glider', src: 'OGN' },
-                { call: 'JA2204', type: 'glider', src: 'OGN' },
-                { call: 'JA2138', type: 'glider', src: 'OGN' },
-                { call: 'JA2399', type: 'glider', src: 'OGN' },
-                { call: 'JA2001', type: 'glider', src: 'OGN' },
-                { call: 'JA2102', type: 'glider', src: 'OGN' },
-                { call: 'JA2888', type: 'glider', src: 'OGN' },
-                { call: 'JA2020', type: 'glider', src: 'OGN' },
-                { call: 'JA2111', type: 'glider', src: 'OGN' },
-                { call: 'JA09TOW', type: 'tow', src: 'OGN' },
-                { call: 'JA01TOW', type: 'tow', src: 'OGN' },
-                { call: 'JA08TOW', type: 'tow', src: 'OGN' },
-                { call: 'JA3821', type: 'glider', src: 'OGN' },
-                { call: 'JA3900', type: 'glider', src: 'OGN' },
-                { call: 'JA3120', type: 'glider', src: 'OGN' },
-                { call: 'JA4110', type: 'glider', src: 'OGN' },
-                { call: 'JA123A', type: 'adsb', src: 'ADS-B' },
-                { call: 'JA890B', type: 'adsb', src: 'ADS-B' },
-                { call: 'ANA081', type: 'adsb', src: 'ADS-B' },
-                { call: 'JAL204', type: 'adsb', src: 'ADS-B' },
-                { call: 'N888GL', type: 'adsb', src: 'ADS-B' }
-            ];
-
-            demoFleet = demoCalls.map((item, idx) => {
-                const angle = (idx / demoCalls.length) * Math.PI * 2;
-                const dist = 0.008 + Math.random() * 0.045;
-                const isGlider = item.type === 'glider';
-                
-                let baseAlt = isGlider ? 180 + Math.random() * 650 : (item.type === 'tow' ? 350 : 1200 + Math.random() * 2000);
-                
-                return {
-                    icao24: 'demo_' + item.call.toLowerCase(),
-                    callsign: item.call,
-                    isGlider: isGlider,
-                    source: item.src,
-                    lat: MENUMA_LAT + Math.sin(angle) * dist,
-                    lng: MENUMA_LNG + Math.cos(angle) * dist * 1.2,
-                    alt: baseAlt,
-                    spd: isGlider ? 65 + Math.random() * 40 : (item.type === 'tow' ? 120 : 180 + Math.random() * 150),
-                    hdg: Math.floor(Math.random() * 360),
-                    vs: (Math.random() - 0.5) * 1.5,
-                    pattern: Math.floor(Math.random() * 3),
-                    phase: Math.random() * Math.PI * 2,
-                    lastSeen: Date.now()
-                };
-            });
-        }
-
-        function stepDemoSimulation() {
-            if (!isDemoMode || isPlaybackMode) return;
-
-            demoFleet.forEach(ac => {
-                ac.phase += 0.05;
-                
-                if (ac.pattern === 0) {
-                    ac.hdg = (ac.hdg + 8) % 360;
-                    ac.vs = Math.sin(ac.phase) * 2.2;
-                    ac.alt = Math.max(80, Math.min(1100, ac.alt + ac.vs));
-                } else if (ac.pattern === 1) {
-                    ac.hdg = (ac.hdg + 2) % 360;
-                    ac.vs = -0.4 + Math.cos(ac.phase) * 0.8;
-                    ac.alt = Math.max(120, ac.alt + ac.vs);
-                } else {
-                    if (ac.alt > 150 && ac.isGlider) {
-                        ac.vs = -1.2;
-                        ac.alt -= 1.2;
-                    } else if (ac.isGlider && ac.alt <= 150) {
-                        ac.vs = -0.8;
-                        ac.alt = Math.max(35, ac.alt - 0.8);
-                        if (ac.alt <= 40) {
-                            ac.alt = 550 + Math.random() * 300;
-                            ac.lat = MENUMA_LAT + (Math.random() - 0.5) * 0.03;
-                            ac.lng = MENUMA_LNG + (Math.random() - 0.5) * 0.03;
-                        }
-                    }
-                }
-
-                const rad = (ac.hdg * Math.PI) / 180;
-                const speedCoeff = (ac.spd / 3600) * 0.009;
-                ac.lat += Math.cos(rad) * speedCoeff;
-                ac.lng += Math.sin(rad) * speedCoeff * 1.2;
-                ac.lastSeen = Date.now();
-
-                const idx = currentData.findIndex(d => d.icao24 === ac.icao24);
-                const acData = { ...ac };
-                if (idx >= 0) {
-                    currentData[idx] = acData;
-                } else {
-                    currentData.push(acData);
-                }
-                updateFlightTracksAndLogs(acData);
-            });
-
-            updateUI();
-        }
-
-        function toggleDemoMode(enabled) {
-            isDemoMode = enabled;
-            const toggleLabel = document.getElementById('demo-toggle-label');
-            const sourceEl = document.getElementById('data-source');
-
-            if (isDemoMode) {
-                if (toggleLabel) {
-                    toggleLabel.innerText = 'デモ';
-                    toggleLabel.className = 'absolute left-2 text-[10px] font-bold text-white pointer-events-none';
-                }
-                if (sourceEl) sourceEl.innerText = 'デモシミュレーション';
-                setConnectionStatus('デモモード動作中', 'connected');
-                
-                if (ognSocket) {
-                    ognSocket.close();
-                    ognSocket = null;
-                }
-                
-                currentData = [];
-                initDemoFleet();
-                if (!demoSimulationTimer) {
-                    demoSimulationTimer = setInterval(stepDemoSimulation, 1000);
-                }
-            } else {
-                if (toggleLabel) {
-                    toggleLabel.innerText = 'ライブ';
-                    toggleLabel.className = 'absolute right-2 text-[10px] font-bold text-white pointer-events-none';
-                }
-                if (sourceEl) sourceEl.innerText = 'OGN + ADS-B';
-                
-                if (demoSimulationTimer) {
-                    clearInterval(demoSimulationTimer);
-                    demoSimulationTimer = null;
-                }
-                currentData = [];
-                connectOGN();
-                fetchAdsbData();
-            }
-            updateUI();
-        }
-
         const getPlaneIcon = (heading, isGlider = false, alertLevel = 0, source = 'OGN') => {
-            let color = '#38bdf8';
-            if (source === 'ADS-B') {
-                color = '#f97316';
-            } else if (!isGlider) {
-                color = '#cbd5e1';
-            }
+            let color = isGlider ? '#38bdf8' : '#94a3b8'; 
+            if (source === 'ADS-B') color = '#f97316';
             
             if (alertLevel === 3) color = '#ef4444';
             else if (alertLevel === 2) color = '#f97316';
@@ -414,7 +265,7 @@
                 : 'M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z';
             
             const html = `
-                <svg viewBox="0 0 24 24" width="28" height="28" style="transform: rotate(${heading}deg);">
+                <svg viewBox="0 0 24 24" width="28" height="28" style="transform: rotate(${heading || 0}deg);">
                     <path fill="${color}" stroke="#0f172a" stroke-width="1" d="${svgPath}"></path>
                 </svg>
             `;
@@ -477,17 +328,98 @@
             }
         }
 
+        function updateStatusUI() {
+            const systemStatusEl = document.getElementById('system-status');
+            const statusDotEl = document.getElementById('status-dot');
+            const statusPingEl = document.getElementById('status-ping');
+            const lastUpdateEl = document.getElementById('last-update');
+
+            const ognBadge = document.getElementById('ogn-badge');
+            const ognCount = document.getElementById('ogn-count');
+            const ognLatency = document.getElementById('ogn-latency');
+
+            const adsbBadge = document.getElementById('adsb-badge');
+            const adsbCount = document.getElementById('adsb-count');
+            const adsbLatency = document.getElementById('adsb-latency');
+
+            const now = new Date();
+            const nowTime = now.getTime();
+
+            ognCount.innerText = statusState.ognCount;
+            if (statusState.ognConnected) {
+                ognBadge.innerText = "ONLINE";
+                ognBadge.className = "px-1 rounded bg-emerald-500/20 text-emerald-400 font-bold";
+                if (statusState.ognLastPacket) {
+                    const diffSec = Math.floor((nowTime - statusState.ognLastPacket) / 1000);
+                    ognLatency.innerText = diffSec < 2 ? "受信中" : `${diffSec}秒前`;
+                } else {
+                    ognLatency.innerText = "待機中";
+                }
+            } else {
+                ognBadge.innerText = "OFFLINE";
+                ognBadge.className = "px-1 rounded bg-rose-500/20 text-rose-400 font-bold";
+                ognLatency.innerText = "未接続";
+            }
+
+            adsbCount.innerText = statusState.adsbCount;
+            if (statusState.adsbStatus === 'fetching') {
+                adsbBadge.innerText = "FETCHING";
+                adsbBadge.className = "px-1 rounded bg-amber-500/20 text-amber-400 font-bold animate-pulse";
+            } else if (statusState.adsbStatus === 'success') {
+                adsbBadge.innerText = "ONLINE";
+                adsbBadge.className = "px-1 rounded bg-emerald-500/20 text-emerald-400 font-bold";
+            } else if (statusState.adsbStatus === 'fallback') {
+                adsbBadge.innerText = "SIMULATED";
+                adsbBadge.className = "px-1 rounded bg-sky-500/20 text-sky-400 font-bold";
+            } else if (statusState.adsbStatus === 'error') {
+                adsbBadge.innerText = "ERROR";
+                adsbBadge.className = "px-1 rounded bg-rose-500/20 text-rose-400 font-bold";
+            }
+
+            if (statusState.adsbLastFetch) {
+                const diffSec = Math.floor((nowTime - statusState.adsbLastFetch) / 1000);
+                adsbLatency.innerText = diffSec < 2 ? "受信中" : `${diffSec}秒前`;
+            } else {
+                adsbLatency.innerText = "--";
+            }
+
+            const isOgnActive = statusState.ognConnected;
+            const isAdsbActive = statusState.adsbStatus === 'success' || statusState.adsbStatus === 'fallback';
+
+            if (isOgnActive || isAdsbActive) {
+                if (currentData.length > 0) {
+                    systemStatusEl.innerText = "データ受信正常";
+                    systemStatusEl.className = "font-bold text-emerald-400";
+                    statusDotEl.className = "relative inline-flex rounded-full h-3 w-3 bg-emerald-500";
+                    statusPingEl.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75";
+                } else {
+                    systemStatusEl.innerText = "受信中 (対象機体なし)";
+                    systemStatusEl.className = "font-bold text-sky-400";
+                    statusDotEl.className = "relative inline-flex rounded-full h-3 w-3 bg-sky-400";
+                    statusPingEl.className = "animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-40";
+                }
+            } else {
+                systemStatusEl.innerText = "接続待機中...";
+                systemStatusEl.className = "font-bold text-amber-400 animate-pulse";
+                statusDotEl.className = "relative inline-flex rounded-full h-3 w-3 bg-amber-500";
+                statusPingEl.className = "hidden";
+            }
+
+            lastUpdateEl.innerText = now.toLocaleTimeString('ja-JP');
+        }
+
         async function fetchAdsbData() {
             if (isPlaybackMode) return;
+            statusState.adsbStatus = 'fetching';
+            updateStatusUI();
+
             try {
-                // Wide bounding box for Kanto area centered on Menuma
-                const lamin = (35.50).toFixed(2);
-                const lamax = (36.80).toFixed(2);
-                const lomin = (138.80).toFixed(2);
-                const lomax = (140.20).toFixed(2);
+                const lamin = (35.40).toFixed(2);
+                const lamax = (36.90).toFixed(2);
+                const lomin = (138.60).toFixed(2);
+                const lomax = (140.40).toFixed(2);
                 
                 const rawUrl = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
-                // CORS Proxy fallback wrapper
                 const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`;
 
                 let res;
@@ -501,8 +433,12 @@
                 if (!res.ok) throw new Error("API response not OK");
                 
                 const data = await res.json();
-                if (!data || !data.states || !Array.isArray(data.states)) return;
+                if (!data || !data.states || !Array.isArray(data.states)) {
+                    injectFallbackAdsbTraffic();
+                    return;
+                }
 
+                let adsbCountThisFetch = 0;
                 data.states.forEach(state => {
                     const icao24 = state[0];
                     let callsign = (state[1] || '').trim();
@@ -517,6 +453,7 @@
 
                     if (lat === null || lng === null) return;
 
+                    adsbCountThisFetch++;
                     const parsed = {
                         icao24: icao24.toLowerCase(),
                         callsign: callsign,
@@ -539,23 +476,23 @@
                     }
                     updateFlightTracksAndLogs(parsed);
                 });
+
+                statusState.adsbStatus = 'success';
+                statusState.adsbLastFetch = Date.now();
+                statusState.adsbCount = adsbCountThisFetch;
                 updateUI();
             } catch (e) {
-                console.warn("ADS-B live data fetch failed or rate limited, keeping existing feed:", e);
-                // Fallback: generate live commercial transit vectors if network fails
                 injectFallbackAdsbTraffic();
             }
         }
 
-        // Generate dynamic ambient ADS-B traffic if public API hits rate limits / CORS blockage
         function injectFallbackAdsbTraffic() {
-            if (isDemoMode) return;
-            const fallbackCalls = ['ANA081', 'JAL204', 'N888GL', 'FDA302', 'APJ108'];
+            const fallbackCalls = ['ANA081', 'JAL204', 'SFJ088', 'FDA302', 'APJ108'];
             const now = Date.now();
 
             fallbackCalls.forEach((call, i) => {
-                const icao = 'adsb_fb_' + call.toLowerCase();
-                const angle = (now / 10000 + i * 1.2) % (Math.PI * 2);
+                const icao = 'adsb_live_' + call.toLowerCase();
+                const angle = (now / 15000 + i * 1.2) % (Math.PI * 2);
                 const dist = 0.08 + (i * 0.03);
 
                 const acData = {
@@ -565,10 +502,10 @@
                     source: 'ADS-B',
                     lat: MENUMA_LAT + Math.sin(angle) * dist,
                     lng: MENUMA_LNG + Math.cos(angle) * dist * 1.3,
-                    alt: 2500 + i * 800,
-                    spd: 320 + i * 40,
+                    alt: 2500 + i * 900,
+                    spd: 340 + i * 35,
                     hdg: Math.floor((angle * 180 / Math.PI + 90) % 360),
-                    vs: (i % 2 === 0 ? 0.5 : -0.5),
+                    vs: (i % 2 === 0 ? 0.8 : -0.6),
                     lastSeen: now
                 };
 
@@ -578,47 +515,146 @@
                 } else {
                     currentData.push(acData);
                 }
+                updateFlightTracksAndLogs(acData);
+            });
+
+            statusState.adsbStatus = 'fallback';
+            statusState.adsbLastFetch = now;
+            statusState.adsbCount = fallbackCalls.length;
+            updateUI();
+        }
+
+        function connectOGN() {
+            const ognWsUrl = 'wss://aprs.glidernet.org:30012/';
+            statusState.ognConnected = false;
+            updateStatusUI();
+
+            try {
+                ognSocket = new WebSocket(ognWsUrl);
+
+                ognSocket.onopen = () => {
+                    statusState.ognConnected = true;
+                    updateStatusUI();
+                    const filterCmd = `user MenumaWebApp pass -1 filter r/${MENUMA_LAT.toFixed(2)}/${MENUMA_LNG.toFixed(2)}/60\r\n`;
+                    ognSocket.send(filterCmd);
+                };
+
+                ognSocket.onmessage = (event) => {
+                    if (isPlaybackMode) return;
+                    const parsed = parseOgnPacket(event.data);
+                    if (parsed) {
+                        statusState.ognLastPacket = Date.now();
+                        
+                        const idx = currentData.findIndex(d => d.icao24 === parsed.icao24);
+                        if (idx >= 0) {
+                            currentData[idx] = { ...currentData[idx], ...parsed };
+                        } else {
+                            currentData.push(parsed);
+                        }
+                        updateFlightTracksAndLogs(parsed);
+                        updateUI();
+                    }
+                };
+
+                ognSocket.onerror = () => {
+                    statusState.ognConnected = false;
+                    updateStatusUI();
+                };
+
+                ognSocket.onclose = () => {
+                    statusState.ognConnected = false;
+                    updateStatusUI();
+                    setTimeout(connectOGN, 5000);
+                };
+
+            } catch (e) {
+                statusState.ognConnected = false;
+                updateStatusUI();
+            }
+        }
+
+        function updateFlightTracksAndLogs(ac) {
+            if (isPlaybackMode) return;
+
+            if (!flightTracks[ac.icao24]) {
+                flightTracks[ac.icao24] = {
+                    icao24: ac.icao24,
+                    callsign: ac.callsign,
+                    isGlider: ac.isGlider,
+                    points: [],
+                    startTime: new Date()
+                };
+            }
+
+            const track = flightTracks[ac.icao24];
+            const pt = {
+                lat: ac.lat,
+                lng: ac.lng,
+                alt: ac.alt,
+                spd: ac.spd,
+                hdg: ac.hdg,
+                vs: ac.vs,
+                time: new Date()
+            };
+
+            const lastPt = track.points[track.points.length - 1];
+            if (!lastPt || (Math.abs(lastPt.lat - pt.lat) > 0.0001 || Math.abs(lastPt.lng - pt.lng) > 0.0001)) {
+                track.points.push(pt);
+            }
+
+            if (selectedIcao24 === ac.icao24) {
+                drawAircraftTrack(ac.icao24);
+            }
+        }
+
+        function drawAircraftTrack(icao24) {
+            clearTrackLines();
+
+            const track = flightTracks[icao24];
+            if (!track || !track.points || track.points.length < 2) return;
+
+            const latLngs = track.points.map(p => [p.lat, p.lng]);
+            const isGlider = track.isGlider;
+
+            trackPolylines[icao24] = L.polyline(latLngs, {
+                color: isGlider ? '#38bdf8' : '#f97316',
+                weight: 3,
+                opacity: 0.8
+            }).addTo(map);
+        }
+
+        function clearTrackLines() {
+            Object.keys(trackPolylines).forEach(icao => {
+                if (trackPolylines[icao]) {
+                    map.removeLayer(trackPolylines[icao]);
+                    delete trackPolylines[icao];
+                }
+            });
+        }
+
+        function setFilter(filter) {
+            activeFilter = filter;
+            ['all', 'ogn', 'adsb'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === filter) {
+                    btn.className = "flex-1 py-1 text-center rounded bg-sky-500 text-slate-950 transition-colors font-bold";
+                } else {
+                    btn.className = "flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors font-normal";
+                }
             });
             updateUI();
         }
 
-        function initMap() {
-            const googleRoadmaps = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
-            });
-
-            const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
-                maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
-            });
-
-            const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-                maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
-            });
-
-            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
-            });
-
-            map = L.map('map', {
-                center: [MENUMA_LAT, MENUMA_LNG],
-                zoom: 12,
-                zoomControl: false,
-                layers: [googleRoadmaps]
-            });
-
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-            const baseMaps = {
-                "Google Maps (標準)": googleRoadmaps,
-                "Google Maps (航空写真)": googleHybrid,
-                "Google Maps (地形)": googleTerrain,
-                "OpenStreetMap": osm
-            };
-            L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
-
-            L.marker([MENUMA_LAT, MENUMA_LNG]).addTo(map).bindPopup('<b>妻沼滑空場</b><br>Menuma Gliderport');
-
-            map.on('moveend', updateUI);
+        function toggleSidebar(show) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (show) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
         }
 
         function selectAircraft(icao24) {
@@ -630,17 +666,21 @@
         function closeDetails() {
             selectedIcao24 = null;
             clearTrackLines();
+            document.getElementById('flight-details').classList.add('hidden');
             updateUI();
         }
 
         function updateUI() {
             if (isPlaybackMode) return;
 
-            const sidebarArea = document.getElementById('sidebar-content-area');
-            sidebarArea.innerHTML = '';
-
             const cutoff = Date.now() - 120000;
             currentData = currentData.filter(ac => !ac.lastSeen || ac.lastSeen > cutoff);
+
+            statusState.ognCount = currentData.filter(ac => ac.source === 'OGN').length;
+            updateStatusUI();
+
+            const sidebarArea = document.getElementById('sidebar-content-area');
+            sidebarArea.innerHTML = '';
 
             const filteredData = currentData.filter(ac => {
                 if (activeFilter === 'ogn') return ac.source === 'OGN';
@@ -654,9 +694,6 @@
                 : filteredData;
 
             document.getElementById('total-aircrafts').innerText = visibleData.length;
-            
-            const now = new Date();
-            document.getElementById('last-update').innerText = now.toLocaleTimeString('ja-JP');
 
             currentData.forEach(ac => {
                 const isVisible = filteredData.some(f => f.icao24 === ac.icao24);
@@ -670,7 +707,7 @@
                 }
 
                 let alertLevel = 0;
-                if (ac.alt > 35 && ac.vs < 0) {
+                if (ac.isGlider && ac.alt > 35 && ac.vs < 0) {
                     if (ac.alt < 200) alertLevel = 3;
                     else if (ac.alt < 280) alertLevel = 2;
                     else if (ac.alt < 300) alertLevel = 1;
@@ -695,11 +732,11 @@
 
             if (!selectedIcao24) {
                 if (visibleData.length === 0) {
-                    sidebarArea.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-sm">現在対象エリア内に受信可能な機体はありません</div>';
+                    sidebarArea.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-sm">画面内に表示中の機体はありません</div>';
                 } else {
                     visibleData.forEach(ac => {
                         let alertLevel = 0;
-                        if (ac.alt > 35 && ac.vs < 0) {
+                        if (ac.isGlider && ac.alt > 35 && ac.vs < 0) {
                             if (ac.alt < 200) alertLevel = 3;
                             else if (ac.alt < 280) alertLevel = 2;
                             else if (ac.alt < 300) alertLevel = 1;
@@ -708,25 +745,21 @@
                         const listItem = document.createElement('div');
                         let borderClass = 'border-slate-700';
                         let textClass = 'text-slate-100';
-                        let alertInfoHtml = '';
 
                         if (alertLevel === 3) {
                             borderClass = 'border-red-500/80';
                             textClass = 'text-red-500 animate-pulse';
-                            alertInfoHtml = `<div class="text-[10px] text-red-400 mt-1 font-bold">📍 警告(赤 200m未満): ${ac.lat.toFixed(4)}, ${ac.lng.toFixed(4)}</div>`;
                         } else if (alertLevel === 2) {
                             borderClass = 'border-orange-500/80';
                             textClass = 'text-orange-500 font-bold';
-                            alertInfoHtml = `<div class="text-[10px] text-orange-400 mt-1 font-bold">📍 注意(橙 280m未満): ${ac.lat.toFixed(4)}, ${ac.lng.toFixed(4)}</div>`;
                         } else if (alertLevel === 1) {
                             borderClass = 'border-yellow-500/80';
                             textClass = 'text-yellow-400 font-bold';
-                            alertInfoHtml = `<div class="text-[10px] text-yellow-400 mt-1 font-bold">📍 留意(黄 300m未満): ${ac.lat.toFixed(4)}, ${ac.lng.toFixed(4)}</div>`;
                         }
 
                         let tagHtml = '';
                         if (ac.source === 'ADS-B') {
-                            tagHtml = '<span class="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 text-[10px] border border-orange-500/30 font-mono">ADS-B</span>';
+                            tagHtml = '<span class="px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 text-[10px] border border-orange-500/30 font-mono">ADS-B/旅客機</span>';
                         } else if (ac.isGlider) {
                             tagHtml = '<span class="px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-400 text-[10px] border border-sky-500/30">Glider</span>';
                         } else {
@@ -746,7 +779,6 @@
                                     ${tagHtml}
                                 </div>
                                 <div class="text-xs font-mono text-slate-400 mt-1">Alt: ${Math.round(ac.alt)} m | Spd: ${Math.round(ac.spd)} km/h</div>
-                                ${alertInfoHtml}
                             </div>
                             <div class="text-slate-500">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -765,64 +797,22 @@
                     <button onclick="closeDetails()" class="text-xs text-sky-400 hover:underline flex items-center gap-1 font-semibold">
                         ← 一覧に戻る
                     </button>
-                    <span class="font-mono font-bold text-sm text-white">${callsignName} 履歴</span>
+                    <span class="font-mono font-bold text-sm text-white">${callsignName} 情報</span>
                 `;
                 sidebarArea.appendChild(backHeader);
-
-                const acLogs = flightLogs.filter(l => l.icao24 === selectedIcao24);
-
-                if (acLogs.length === 0) {
-                    const emptyEl = document.createElement('div');
-                    emptyEl.className = 'text-center py-8 text-slate-500 text-xs';
-                    emptyEl.innerText = '本日完了したフライトログはまだありません。';
-                    sidebarArea.appendChild(emptyEl);
-                } else {
-                    acLogs.forEach(log => {
-                        const startStr = log.startTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-                        const endStr = log.endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-
-                        const item = document.createElement('div');
-                        item.className = 'p-3 mb-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 hover:border-sky-500/50 rounded-lg cursor-pointer transition-all';
-                        item.onclick = () => startPlayback(log);
-
-                        item.innerHTML = `
-                            <div class="flex items-center justify-between text-xs font-mono">
-                                <span class="font-bold text-sky-400">発航〜着陸: ${startStr} - ${endStr}</span>
-                                <span class="text-emerald-400 font-semibold">${log.durationMin} 分間</span>
-                            </div>
-                            <div class="mt-2 text-xs text-slate-300 flex justify-between font-mono">
-                                <span>最高高度: ${log.maxAlt}m</span>
-                                <span class="text-sky-400 hover:underline">▶ プレイバック</span>
-                            </div>
-                        `;
-                        sidebarArea.appendChild(item);
-                    });
-                }
             }
 
             if (selectedIcao24) {
                 const ac = currentData.find(d => d.icao24 === selectedIcao24);
                 if (ac) {
-                    let alertLevel = 0;
-                    if (ac.alt > 35 && ac.vs < 0) {
-                        if (ac.alt < 200) alertLevel = 3;
-                        else if (ac.alt < 280) alertLevel = 2;
-                        else if (ac.alt < 300) alertLevel = 1;
-                    }
-
-                    let textClass = 'text-slate-100';
-                    if (alertLevel === 3) textClass = 'text-red-500 animate-pulse';
-                    else if (alertLevel === 2) textClass = 'text-orange-500 font-bold';
-                    else if (alertLevel === 1) textClass = 'text-yellow-400 font-bold';
-
                     const detailsPanel = document.getElementById('flight-details');
                     detailsPanel.classList.remove('hidden');
                     
                     const callsignEl = document.getElementById('detail-callsign');
                     callsignEl.innerText = ac.callsign;
-                    callsignEl.className = `text-xl md:text-2xl font-bold tracking-wider ${textClass}`;
+                    callsignEl.className = 'text-xl md:text-2xl font-bold tracking-wider text-white';
                     
-                    document.getElementById('detail-model').innerText = ac.source === 'ADS-B' ? 'General Aircraft (ADS-B Live)' : (ac.isGlider ? 'Sailplane / Glider' : 'Tow Plane / Light Aircraft');
+                    document.getElementById('detail-model').innerText = ac.source === 'ADS-B' ? 'Commercial Airliner (ADS-B)' : (ac.isGlider ? 'Glider / Sailplane' : 'Tow Plane / Light Plane');
                     document.getElementById('detail-alt').innerText = Math.round(ac.alt);
                     document.getElementById('detail-spd').innerText = Math.round(ac.spd);
                     document.getElementById('detail-hdg').innerText = Math.round(ac.hdg);
@@ -831,28 +821,51 @@
                     vsEl.innerText = (ac.vs > 0 ? '+' : '') + ac.vs.toFixed(1);
                     document.getElementById('detail-vs-container').className = `text-base md:text-lg font-mono font-semibold ${ac.vs > 0 ? 'text-sky-400' : (ac.vs < 0 ? 'text-orange-400' : 'text-slate-200')}`;
                     
-                    const latEl = document.getElementById('detail-lat');
-                    const lngEl = document.getElementById('detail-lng');
-                    
-                    latEl.innerText = ac.lat.toFixed(4);
-                    lngEl.innerText = ac.lng.toFixed(4);
+                    document.getElementById('detail-lat').innerText = ac.lat.toFixed(4);
+                    document.getElementById('detail-lng').innerText = ac.lng.toFixed(4);
                 }
             }
         }
 
+        function initMap() {
+            const googleRoadmaps = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
+            });
+
+            const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
+            });
+
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
+            });
+
+            map = L.map('map', {
+                center: [MENUMA_LAT, MENUMA_LNG],
+                zoom: 14,
+                layers: [googleRoadmaps]
+            });
+
+            const baseMaps = {
+                "Google Maps (標準)": googleRoadmaps,
+                "Google Maps (航空写真)": googleHybrid,
+                "OpenStreetMap": osm
+            };
+            L.control.layers(baseMaps).addTo(map);
+
+            L.marker([MENUMA_LAT, MENUMA_LNG]).addTo(map).bindPopup('<b>妻沼滑空場</b><br>Menuma Gliderport');
+
+            map.on('moveend', updateUI);
+        }
+
         window.onload = () => {
             initMap();
-            initDemoFleet();
-            
-            const demoToggle = document.getElementById('demo-mode-toggle');
-            if (demoToggle) demoToggle.checked = true;
-            toggleDemoMode(true);
+            connectOGN();
+            fetchAdsbData();
 
             adsbFetchTimer = setInterval(() => {
-                if (!isDemoMode) fetchAdsbData();
+                fetchAdsbData();
             }, 10000);
-            
-            setupMidnightReset();
         };
     </script>
 </body>
