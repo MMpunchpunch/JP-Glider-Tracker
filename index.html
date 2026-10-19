@@ -13,7 +13,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         #map { z-index: 10; }
-        /* カスタムアイコンのスタイル */
         .aircraft-icon {
             transition: all 1s linear;
             display: flex;
@@ -25,7 +24,6 @@
         .aircraft-icon svg {
             filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
         }
-        /* Leafletコントロールをダークモードに合わせる */
         .leaflet-control-zoom a {
             background-color: #1e293b !important;
             color: #f8fafc !important;
@@ -40,7 +38,6 @@
         .leaflet-control-layers-base label {
             color: #f8fafc !important;
         }
-        /* アニメーション・トランジション */
         .playback-slider::-webkit-slider-thumb {
             appearance: none;
             width: 16px;
@@ -50,7 +47,6 @@
             cursor: pointer;
             box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
         }
-        /* カスタムスクロールバー */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
@@ -59,24 +55,21 @@
 </head>
 <body class="bg-slate-900 text-slate-100 overflow-hidden flex h-screen w-screen relative">
 
-    <!-- モバイル背景オーバーレイ -->
     <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30 transition-opacity md:hidden"></div>
 
-    <!-- サイドバー (機体リスト) -->
+    <!-- サイドバー -->
     <aside id="sidebar" class="fixed md:relative top-0 left-0 h-full w-80 bg-slate-900 border-r border-slate-700 flex flex-col z-40 shadow-2xl transition-transform duration-300 ease-in-out -translate-x-full md:translate-x-0 flex-shrink-0">
-        <!-- サイドバー収納矢印ボタン（サイドバー内部右上） -->
         <button onclick="toggleSidebar(false)" title="サイドバーをたたむ" class="absolute top-4 right-3 text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 p-1.5 rounded-lg border border-slate-700 transition-colors z-10">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
         </button>
 
-        <!-- ヘッダー -->
         <div class="p-4 md:p-5 border-b border-slate-800 bg-slate-950 flex justify-between items-start">
             <div>
                 <h1 class="text-base md:text-lg font-bold text-sky-400 flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Menuma Tracker
                 </h1>
-                <p class="text-[11px] text-slate-400 mt-0.5">妻沼滑空場 ライブ監視システム</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">妻沼滑空場 リアルタイム監視システム</p>
             </div>
         </div>
 
@@ -86,12 +79,11 @@
                     <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span id="status-dot" class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
-                <span id="system-status" class="font-medium">更新中...</span>
+                <span id="system-status" class="font-medium">受信中...</span>
             </span>
             <span id="last-update" class="text-slate-500 font-mono">--:--:--</span>
         </div>
 
-        <!-- 統計サマリー & フィルタ -->
         <div class="p-4 border-b border-slate-800 space-y-3">
             <div class="grid grid-cols-2 gap-3">
                 <div class="bg-slate-800/80 p-2.5 rounded-lg text-center border border-slate-700/50">
@@ -104,7 +96,6 @@
                 </div>
             </div>
 
-            <!-- 表示フィルター切り替え -->
             <div class="flex bg-slate-950 p-1 rounded-lg text-xs font-semibold">
                 <button id="filter-all" onclick="setFilter('all')" class="flex-1 py-1 text-center rounded bg-sky-500 text-slate-950 transition-colors">すべて</button>
                 <button id="filter-ogn" onclick="setFilter('ogn')" class="flex-1 py-1 text-center rounded text-slate-400 hover:text-white transition-colors">OGN</button>
@@ -112,17 +103,14 @@
             </div>
         </div>
 
-        <!-- 機体リストコンテナ (メインリスト) -->
         <div class="flex-1 overflow-y-auto p-2" id="sidebar-content-area">
             <div class="flex items-center justify-center h-full text-slate-500 text-sm">
-                データ取得中...
+                ライブデータ待機中...
             </div>
         </div>
     </aside>
 
-    <!-- メインマップエリア -->
     <main class="flex-1 relative h-full w-full">
-        <!-- サイドバー開く用のコンパクトな矢印引き出しタブボタン -->
         <button id="sidebar-open-btn" onclick="toggleSidebar(true)" title="サイドバーを開く" class="absolute top-4 left-0 z-[200] bg-slate-900/90 hover:bg-slate-800 text-sky-400 border border-l-0 border-slate-700 py-3 px-1.5 rounded-r-xl shadow-2xl transition-all flex items-center justify-center group active:scale-95">
             <svg id="sidebar-open-icon" class="w-5 h-5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path>
@@ -131,20 +119,18 @@
 
         <div id="map" class="w-full h-full bg-slate-800"></div>
 
-        <!-- プレイバック（タイムトラベル）コントロールバー -->
         <div id="playback-bar" class="hidden absolute bottom-6 left-1/2 transform -translate-x-1/2 z-[400] w-11/12 max-w-2xl bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-2xl shadow-2xl p-3 md:p-4 text-xs">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <span class="px-2 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded font-bold text-[10px] md:text-xs">再生モード</span>
-                    <span id="pb-callsign" class="text-sm md:text-base font-bold text-white font-mono">JA2515</span>
-                    <span id="pb-time-range" class="text-slate-400 font-mono text-[10px] md:text-[11px]">10:15:00 - 10:28:30</span>
+                    <span id="pb-callsign" class="text-sm md:text-base font-bold text-white font-mono">--</span>
+                    <span id="pb-time-range" class="text-slate-400 font-mono text-[10px] md:text-[11px]">--:--:-- - --:--:--</span>
                 </div>
                 <button onclick="exitPlayback()" class="text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
                     ライブに戻る ✕
                 </button>
             </div>
 
-            <!-- シークバー -->
             <div class="flex items-center gap-2 md:gap-3">
                 <button id="pb-play-btn" onclick="togglePlaybackPlay()" class="p-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-full transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0">
                     <svg id="pb-play-icon" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -165,7 +151,6 @@
             </div>
         </div>
 
-        <!-- 機体詳細オーバーレイ (ポップアップ) -->
         <div id="flight-details" class="hidden absolute top-4 right-4 z-[400] w-72 md:w-80 bg-slate-900/90 backdrop-blur-md border border-slate-600 rounded-xl shadow-2xl p-4 md:p-5 text-sm transform transition-all">
             <div class="flex justify-between items-start border-b border-slate-700 pb-3 mb-3">
                 <div>
@@ -203,7 +188,6 @@
     </main>
 
     <script>
-        // 妻沼滑空場の正確な緯度経度
         const MENUMA_LAT = 36.2114;
         const MENUMA_LNG = 139.4189;
         
@@ -214,17 +198,23 @@
         let ognSocket = null;
         let reconnectTimer = null;
         let adsbFetchTimer = null;
-        let activeFilter = 'all'; // 'all', 'ogn', 'adsb'
-        const RECONNECT_INTERVAL = 3000;
+        let activeFilter = 'all';
+        const RECONNECT_INTERVAL = 4000;
 
-        // フライトログ・軌跡・標高関連
-        let flightTracks = {};      // { icao24: { icao24, callsign, isGlider, source, points: [], startTime, inAir } }
-        let trackPolylines = {};    // { icao24: L.polyline }
-        let flightLogs = [];        // [ { id, icao24, callsign, isGlider, source, startTime, endTime, durationMin, maxAlt, points: [] } ]
-        let groundElevCache = {};   // 標高データキャッシュ
+        let flightTracks = {};
+        let trackPolylines = {};
+        let flightLogs = [];
+        let groundElevCache = {};   
 
-        // プレイバック管理状態
-        // モバイルおよびデスクトップ共通のサイドバー開閉切り替え
+        let isPlaybackMode = false;
+        let activePlaybackLog = null;
+        let playbackTimer = null;
+        let playbackCurrentIndex = 0;
+        let playbackSpeed = 2;
+        let isPlaybackPlaying = false;
+        let playbackMarker = null;
+        let playbackPolyline = null;
+
         function toggleSidebar(open) {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebar-overlay');
@@ -240,13 +230,11 @@
                 openBtn.classList.remove('hidden');
             }
 
-            // マップサイズ再計算
             setTimeout(() => {
                 if (map) map.invalidateSize();
             }, 300);
         }
 
-        // フィルター設定変更
         function setFilter(filterType) {
             activeFilter = filterType;
             ['all', 'ogn', 'adsb'].forEach(f => {
@@ -260,13 +248,12 @@
             updateUI();
         }
 
-        // 機体アイコンジェネレーター（ソース：OGN/ADS-Bで色分け）
         const getPlaneIcon = (heading, isGlider = false, alertLevel = 0, source = 'OGN') => {
-            let color = '#38bdf8'; // OGNグライダー
+            let color = '#38bdf8';
             if (source === 'ADS-B') {
-                color = '#f97316'; // ADS-B一般機（オレンジ）
+                color = '#f97316';
             } else if (!isGlider) {
-                color = '#94a3b8'; // OGN 曳航機
+                color = '#cbd5e1';
             }
             
             if (alertLevel === 3) color = '#ef4444';
@@ -290,7 +277,6 @@
             });
         };
 
-        // OGN APRS パケット解析関数
         function parseOgnPacket(line) {
             try {
                 if (!line || line.startsWith('#')) return null;
@@ -342,12 +328,13 @@
             }
         }
 
-        // OpenSky Network API (ADS-B) 定期取得処理
         async function fetchAdsbData() {
             if (isPlaybackMode) return;
             try {
-                const lamin = 35.90, lamax = 36.50;
-                const lomin = 139.10, lomax = 139.70;
+                const lamin = (24.00).toFixed(2);
+                const lamax = (46.00).toFixed(2);
+                const lomin = (122.00).toFixed(2);
+                const lomax = (146.00).toFixed(2);
                 
                 const url = `https://opensky-network.org/api/states/all?lamin=${lamin}&lamax=${lamax}&lomin=${lomin}&lomax=${lomax}`;
                 const res = await fetch(url);
@@ -358,10 +345,12 @@
 
                 data.states.forEach(state => {
                     const icao24 = state[0];
-                    const callsign = (state[1] || icao24).trim();
+                    let callsign = (state[1] || '').trim();
+                    if (!callsign) callsign = icao24.toUpperCase();
+
                     const lng = state[5];
                     const lat = state[6];
-                    const altMeters = state[7] || state[13] || 0;
+                    const altMeters = (state[7] !== null) ? state[7] : ((state[13] !== null) ? state[13] : 0);
                     const spdMs = state[9] || 0;
                     const hdg = state[10] || 0;
                     const vsMs = state[11] || 0;
@@ -392,11 +381,10 @@
                 });
                 updateUI();
             } catch (e) {
-                console.warn("ADS-B fetch warning:", e);
+                console.warn("ADS-B データ取得注意:", e);
             }
         }
 
-        // 国土地理院標高API
         async function getGroundElevation(lat, lng) {
             const key = `${lat.toFixed(3)}_${lng.toFixed(3)}`;
             if (groundElevCache[key] !== undefined) return groundElevCache[key];
@@ -411,7 +399,6 @@
             return 35.0;
         }
 
-        // 全機体のフライト追跡 & 動的着陸判定
         async function updateFlightTracksAndLogs(ac) {
             if (isPlaybackMode) return;
 
@@ -484,7 +471,6 @@
             }
         }
 
-        // 軌跡描画
         function drawAircraftTrack(icao24) {
             clearTrackLines();
             const track = flightTracks[icao24];
@@ -509,7 +495,6 @@
             });
         }
 
-        // 深夜0時リセット機能
         function setupMidnightReset() {
             const now = new Date();
             const midnight = new Date(now);
@@ -526,7 +511,6 @@
             }, midnight.getTime() - now.getTime());
         }
 
-        // UI接続ステータス更新
         function setConnectionStatus(text, state) {
             const statusEl = document.getElementById('system-status');
             const dotEl = document.getElementById('status-dot');
@@ -551,7 +535,6 @@
             }
         }
 
-        // OGN WebSocket 接続
         function connectOGN() {
             if (reconnectTimer) {
                 clearTimeout(reconnectTimer);
@@ -574,6 +557,8 @@
 
                 ognSocket.onopen = () => {
                     setConnectionStatus("ライブ中", "connected");
+                    const filterCmd = `user MenumaWebApp pass -1 filter r/${MENUMA_LAT.toFixed(2)}/${MENUMA_LNG.toFixed(2)}/1500\r\n`;
+                    ognSocket.send(filterCmd);
                 };
 
                 ognSocket.onmessage = (event) => {
@@ -614,7 +599,6 @@
             }
         }
 
-        // プレイバック機能ロジック
         function startPlayback(log) {
             isPlaybackMode = true;
             activePlaybackLog = log;
@@ -734,7 +718,6 @@
             updateUI();
         }
 
-        // マップ初期化
         function initMap() {
             const googleRoadmaps = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'], attribution: '&copy; Google Maps'
@@ -754,12 +737,11 @@
 
             map = L.map('map', {
                 center: [MENUMA_LAT, MENUMA_LNG],
-                zoom: 15,
+                zoom: 12,
                 zoomControl: false,
                 layers: [googleRoadmaps]
             });
 
-            // ズームコントロールを右下に配置（スマホのハンバーガーボタンとの干渉防止）
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             const baseMaps = {
@@ -787,49 +769,13 @@
             updateUI();
         }
 
-        // デモ／シミュレーション機体の生成（OGN/ADS-Bデータが取得できない場合のフォロー）
-        function initDemoAircrafts() {
-            if (currentData.length > 0) return;
-            
-            const demoPlanes = [
-                { icao24: 'ja2515', callsign: 'JA2515', isGlider: true, source: 'OGN', lat: 36.2130, lng: 139.4150, alt: 320, spd: 110, hdg: 85, vs: 1.2, lastSeen: Date.now() },
-                { icao24: 'ja2411', callsign: 'JA2411', isGlider: true, source: 'OGN', lat: 36.2080, lng: 139.4220, alt: 180, spd: 95, hdg: 270, vs: -2.1, lastSeen: Date.now() },
-                { icao24: 'ja01hb', callsign: 'JA01HB (TOW)', isGlider: false, source: 'OGN', lat: 36.2110, lng: 139.4180, alt: 450, spd: 140, hdg: 180, vs: 0.0, lastSeen: Date.now() }
-            ];
-
-            demoPlanes.forEach(p => {
-                currentData.push(p);
-                updateFlightTracksAndLogs(p);
-            });
-            updateUI();
-        }
-
-        // シミュレーションデータの定期移動
-        function updateDemoPositions() {
-            currentData.forEach(ac => {
-                if (ac.icao24.startsWith('ja')) {
-                    const rad = (ac.hdg * Math.PI) / 180;
-                    const distance = (ac.spd / 3600) * 0.002; // 移動量
-                    ac.lat += Math.cos(rad) * distance;
-                    ac.lng += Math.sin(rad) * distance;
-                    ac.alt += ac.vs;
-                    if (ac.alt < 20) ac.vs = 1.5;
-                    if (ac.alt > 600) ac.vs = -1.5;
-                    ac.lastSeen = Date.now();
-                    updateFlightTracksAndLogs(ac);
-                }
-            });
-            updateUI();
-        }
-
-        // UI・マップマーカー・機体詳細リストの更新
         function updateUI() {
             if (isPlaybackMode) return;
 
             const sidebarArea = document.getElementById('sidebar-content-area');
             sidebarArea.innerHTML = '';
 
-            const cutoff = Date.now() - 60000;
+            const cutoff = Date.now() - 120000;
             currentData = currentData.filter(ac => !ac.lastSeen || ac.lastSeen > cutoff);
 
             const filteredData = currentData.filter(ac => {
@@ -848,7 +794,6 @@
             const now = new Date();
             document.getElementById('last-update').innerText = now.toLocaleTimeString('ja-JP');
 
-            // マーカー更新
             currentData.forEach(ac => {
                 const isVisible = filteredData.some(f => f.icao24 === ac.icao24);
                 
@@ -884,10 +829,9 @@
                 }
             });
 
-            // サイドバーリスト描画
             if (!selectedIcao24) {
                 if (visibleData.length === 0) {
-                    sidebarArea.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-sm">該当する機体はありません</div>';
+                    sidebarArea.innerHTML = '<div class="flex items-center justify-center h-full text-slate-500 text-sm">現在対象エリア内に受信可能な機体はありません</div>';
                 } else {
                     visibleData.forEach(ac => {
                         let alertLevel = 0;
@@ -992,7 +936,6 @@
                 }
             }
 
-            // 右上パネル更新
             if (selectedIcao24) {
                 const ac = currentData.find(d => d.icao24 === selectedIcao24);
                 if (ac) {
@@ -1033,19 +976,11 @@
             }
         }
 
-        // Window onload
         window.onload = () => {
             initMap();
             connectOGN();
             fetchAdsbData();
             adsbFetchTimer = setInterval(fetchAdsbData, 10000);
-            
-            // ライブデータが一定時間取得できない場合はデモ機体を表示して確実に動作させる
-            setTimeout(() => {
-                initDemoAircrafts();
-                setInterval(updateDemoPositions, 2000);
-            }, 3000);
-
             setupMidnightReset();
         };
     </script>
